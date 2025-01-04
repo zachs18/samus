@@ -1,6 +1,8 @@
 [package]
 name = "samus"
 version = "0.1.0"
-edition = "2025"
+edition = "2018"
+description="Volatile memory-store behind a socket server that implements simple CRUD queries"
+license="GPL-3.0-or-later"
 
 [dependencies]

@@ -1,6 +1,7 @@
 # Samus
 Memory-only storage service inspired by Redis
 
+[Cargo crate](https://crates.io/crates/samus)
 ### Goals
 
 
