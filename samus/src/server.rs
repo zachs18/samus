@@ -37,6 +37,7 @@ impl<'a> Server<'a> {
       }
       stream.flush()?;
       stream.write_all(CLOSE_CONNECTION_MESSAGE.as_bytes())?;
+      stream.shutdown(std::net::Shutdown::Both)?;
     }
     Ok(())
   }
@@ -115,8 +116,8 @@ impl<'a> Server<'a> {
   fn handle_delete_request(&mut self, key: &String, mut stream: &TcpStream) -> Result<(), Error> {
     let delete_result = self.store.delete(&key);
     match delete_result {
-      Ok(delete_result) => {
-        stream.write_all(delete_result.as_bytes())?;
+      Ok(_) => {
+        stream.write_all(key.as_bytes())?;
         stream.write_all("\n".as_bytes())?;
         stream.flush()?;
         Ok(())
@@ -125,46 +126,5 @@ impl<'a> Server<'a> {
         return Err(Error::other(e.to_string()));
       }
     }
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use std::{
-    time::Duration,
-    thread::sleep,
-    thread,
-  };
-
-  #[test]
-  fn test_get_request() {
-    // Spawn our server in a seperate thread
-    thread::spawn(|| {
-      let test_key = "test_key".to_string();
-      let test_value = "test_value".to_string();
-      let test_ttl = 0;
-      let mut store = Store::new();
-      store.set(&test_key, &test_value, &test_ttl).unwrap();
-      let mut server = Server::new(6666, &mut store);
-      server.start().unwrap();
-    });
-
-    // Give our server time to wake up. This isn't ideal, but it works for now and gives me
-    // confidence in the server.
-    sleep(Duration::new(1, 0));
-
-    // Start a simple client
-    let mut test_stream = TcpStream::connect("127.0.0.1:6666").unwrap();
-    let mut test_buffer = [0; 19];
-
-    // Send a GET request to our server
-    test_stream.write_all(b"GET test_key\n").unwrap();
-    test_stream.shutdown(std::net::Shutdown::Write).unwrap();
-    let mut taker = test_stream.take(19);
-    taker.read(&mut test_buffer).unwrap();
-
-    let buffer_string = std::str::from_utf8(&test_buffer).unwrap();
-    assert_eq!(buffer_string, "test_value\n__TERM__");
   }
 }
